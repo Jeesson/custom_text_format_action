@@ -1,0 +1,5 @@
+name: 'Custom Text Format Action'
+type: module
+description: 'Provides an action to change text format of fields with CKEditor.'
+core_version_requirement: ^9
+package: 'Custom'
