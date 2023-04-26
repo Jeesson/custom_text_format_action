@@ -3,6 +3,8 @@
 namespace Drupal\custom_text_format_action\Plugin\Action;
 
 use Drupal\Core\Action\ActionBase;
+use Drupal\Core\Action\ConfigurableActionBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 
 /**
@@ -15,7 +17,7 @@ use Drupal\Core\Session\AccountInterface;
  *   deriver = "Drupal\Core\Action\Plugin\Action\Derivative\EntityChangedActionDeriver"
  * )
  */
-class ChangeTextFormat extends ActionBase {
+class ChangeTextFormat extends ConfigurableActionBase {
 
   /**
    * {@inheritdoc}
@@ -36,8 +38,13 @@ class ChangeTextFormat extends ActionBase {
         // Current text format.
         $old_text_format = $entity->get($field_name)->format;
 
-        // Change format to 'full_html'.
-        $entity->get($field_name)->format = 'full_html';
+        // Change format.
+        if ($entity->get($field_name)->format !== $this->configuration['format']) {
+          $entity->get($field_name)->format = $this->configuration['format'];
+        } else {
+          $this->messenger()->addMessage("Nothing happened");
+          return;
+        }
 
         // Save
         $entity->save();
@@ -47,7 +54,7 @@ class ChangeTextFormat extends ActionBase {
         $logger->info('Node ID: @nid, Old text format: @old_format, New text format: @new_format', [
           '@nid' => $entity->id(),
           '@old_format' => $old_text_format,
-          '@new_format' => 'full_html',
+          '@new_format' => $this->configuration['format'],
         ]);
       }
     }
@@ -58,6 +65,32 @@ class ChangeTextFormat extends ActionBase {
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
     return $object->access('update', $account, $return_as_object);
+  }
+
+  public function defaultConfiguration() {
+    return ['format' => 'basic_html'];
+  }
+
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $formats = \Drupal::database()->query("select name from {config} where name like 'filter.format%'")->fetchAll();
+    $values = [];
+
+    foreach ($formats as $item) {
+      $values[] = mb_substr($item->name, 14);
+    }
+    $form['format'] = [
+      '#title' => $this->t('Choose your primary format'),
+      '#options' => array_combine($values, $values),
+      '#type' => 'select',
+      '#required' => TRUE,
+      '#default_value' => $this->configuration['format'],
+    ];
+
+    return $form;
+  }
+
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+    $this->configuration["format"] = $form_state->getValue('format');
   }
 
 }
