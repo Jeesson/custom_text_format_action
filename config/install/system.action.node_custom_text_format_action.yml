@@ -4,7 +4,7 @@ dependencies:
   module:
     - custom_text_format_action
 id: node_custom_text_format_action
-label: 'Change text format to full_html'
+label: 'Change text format'
 type: node
 plugin: entity:change_text_format:node
 configuration: {  }
